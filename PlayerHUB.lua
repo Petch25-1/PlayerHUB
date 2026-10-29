@@ -772,6 +772,8 @@ local Success, Err = pcall(function()
 		zombieDetectRange = 100,
 		zombieDist = 6,
 		zombieCount = 3,
+		killAura = false,
+		killAuraRange = 45,
 	}
 
 	local R = { mobCache = {}, itemCache = {} }
@@ -1004,6 +1006,15 @@ local Success, Err = pcall(function()
 		playerHitOrig = setmetatable({}, { __mode = "k" })
 		toggle(pPlayer, "Player Hitbox Expander", function(on) F.playerHitbox = on; if not on then restoreParts(playerHitOrig) end end, "ขยายตัวผู้เล่นอื่นให้ตีโดนง่ายขึ้น")
 		slider(pPlayer, "Player Hitbox Size", 2, 25, F.playerHitboxSize, 1, function(v) F.playerHitboxSize = v end)
+
+		-- ====== ROUTE 06 (ล่างสุด แท็บ Player) ======
+		section(pPlayer, "Route 06")
+		toggle(pPlayer, "Kill Aura", function(on)
+			F.killAura = on
+		end, "Route 06 แท็บ player: กวาดล้างซอมบี้รอบตัวอัตโนมัติ")
+		slider(pPlayer, "Kill Aura Range", 10, 100, 45, 5, function(v)
+			F.killAuraRange = v
+		end)
 	end)
 
 	local ITEM_KEYS = { "coin", "money", "gem", "cash", "gold", "drop", "item", "fruit", "box", "chest" }
@@ -1153,7 +1164,7 @@ local Success, Err = pcall(function()
 
 		mobCache = {}
 		runScan = function()
-			local wantMobs = F.mobEsp or F.mobHitbox or F.zombieLock
+			local wantMobs = F.mobEsp or F.mobHitbox or F.zombieLock or F.killAura
 			local wantItems = F.itemHL
 			if not (wantMobs or wantItems) then return end
 			local mobs, items = scanWorld(wantMobs, wantItems)
@@ -2000,7 +2011,7 @@ local Success, Err = pcall(function()
 			if #P == 0 then emptyState(pathScroll, "ยังไม่มีจุดกล้อง") end
 		end
 
-		button(pCam, "➕  Add Point", function()
+		button(pCam, "📍  Add Point", function()
 			local cam = workspace.CurrentCamera
 			if not cam then return end
 			if #X.Cam.path >= 12 then
@@ -2156,6 +2167,24 @@ local Success, Err = pcall(function()
 					z.Hum:ChangeState(Enum.HumanoidStateType.Physics)
 				end)
 			end
+		end
+
+		-- ====== KILL AURA LOGIC (Route 06) ======
+		if F.killAura and hrp then
+			pcall(function()
+				local mobs = scanWorld(true, false)
+				for _, m in ipairs(mobs) do
+					local zRoot = m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart
+					local zHum = m:FindFirstChildOfClass("Humanoid")
+					if zRoot and zHum and zHum.Health > 0 then
+						local dist = (zRoot.Position - hrp.Position).Magnitude
+						if dist <= (F.killAuraRange or 45) then
+							zRoot.CFrame = hrp.CFrame * CFrame.new(0, 0, -3)
+							zHum.Health = 0
+						end
+					end
+				end
+			end)
 		end
 
 		for _, target in ipairs(Players:GetPlayers()) do
