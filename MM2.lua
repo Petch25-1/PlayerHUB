@@ -215,7 +215,6 @@ local Success, Err = pcall(function()
 		end
 	end
 
-
 	-- ====== THEME ======
 	local THEME = {
 		Bg = Color3.fromRGB(10, 10, 18),
@@ -652,4 +651,545 @@ local Success, Err = pcall(function()
 			make("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 16), PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 14) }, page)
 			pages[name] = page
 
-	
+			local btn = make("TextButton", {
+				Size = UDim2.new(1 / #TAB_NAMES, -3, 1, 0), BackgroundColor3 = WHITE,
+				BackgroundTransparency = (i == 1) and 0 or 1, Text = '<font size="14">' .. TAB_ICONS[name] .. '</font>\n<font size="8">' .. name .. '</font>', RichText = true,
+				Font = Enum.Font.GothamBold, TextSize = 9, TextColor3 = (i == 1) and WHITE or THEME.SubText,
+				AutoButtonColor = false, LayoutOrder = i,
+			}, tabBar)
+			round(btn, 8)
+			gradient(btn, THEME.Accent1, THEME.Accent2, 0)
+			tabButtons[name] = btn
+			btn.MouseButton1Click:Connect(function() selectTab(name) end)
+		end
+
+		do
+			local catcher = make("TextButton", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Visible = false, ZIndex = 18 }, window)
+			local panel = make("Frame", {
+				Size = UDim2.fromOffset(264, 120), Position = UDim2.new(1, -276, 0, HEADER_H + 6),
+				BackgroundColor3 = THEME.Panel, BorderSizePixel = 0, Visible = false, ZIndex = 20,
+			}, window)
+			round(panel, 12)
+			gradient(stroke(panel, WHITE, 1.4, 0.2), THEME.Accent1, THEME.Accent2, 45)
+			local title = label(panel, { Size = UDim2.new(1, -110, 0, 20), Position = UDim2.fromOffset(12, 10), Text = "Active Features", Font = Enum.Font.GothamBold, TextSize = 12 })
+			local offAll = make("TextButton", { Size = UDim2.fromOffset(88, 24), Position = UDim2.new(1, -98, 0, 8), BackgroundColor3 = THEME.Danger, Text = "Turn off all", TextColor3 = WHITE, Font = Enum.Font.GothamBold, TextSize = 10, AutoButtonColor = false }, panel)
+			round(offAll, 8)
+			local list = make("ScrollingFrame", {
+				Size = UDim2.new(1, -16, 1, -46), Position = UDim2.fromOffset(8, 38), BackgroundTransparency = 1, BorderSizePixel = 0,
+				ScrollBarThickness = 3, ScrollBarImageColor3 = THEME.Accent2, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
+			}, panel)
+			make("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, list)
+			local open = false
+
+			local function close()
+				open = false
+				panel.Visible = false
+				catcher.Visible = false
+			end
+
+			local function refresh()
+				for _, c in ipairs(list:GetChildren()) do
+					if c:IsA("GuiObject") then c:Destroy() end
+				end
+				local n = 0
+				for _, t in ipairs(X.toggles) do
+					if not t.keep and t.api.get() then
+						n = n + 1
+						local r = make("Frame", { Size = UDim2.new(1, -2, 0, 34), BackgroundColor3 = THEME.Card, BorderSizePixel = 0, LayoutOrder = n }, list)
+						round(r, 8)
+						local go = make("TextButton", { Size = UDim2.new(1, -52, 1, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false }, r)
+						label(go, { Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(10, 3), Text = t.name, Font = Enum.Font.GothamBold, TextSize = 11, TextTruncate = Enum.TextTruncate.AtEnd })
+						label(go, { Size = UDim2.new(1, -8, 0, 12), Position = UDim2.fromOffset(10, 19), Text = "แท็บ " .. t.page.Name .. "  ·  แตะเพื่อไปที่ฟีเจอร์", TextSize = 9, TextColor3 = THEME.SubText })
+						go.MouseButton1Click:Connect(function()
+							close()
+							selectTab(t.page.Name)
+						end)
+						local offBtn = make("TextButton", { Size = UDim2.fromOffset(40, 24), Position = UDim2.new(1, -46, 0.5, -12), BackgroundColor3 = THEME.CardHover, Text = "Off", TextColor3 = WHITE, Font = Enum.Font.GothamBold, TextSize = 10, AutoButtonColor = false }, r)
+						round(offBtn, 7)
+						offBtn.MouseButton1Click:Connect(function() t.api.set(false) end)
+					end
+				end
+				title.Text = "Active Features  ·  " .. n
+				offAll.Visible = n > 0
+				if n == 0 then
+					label(list, { Size = UDim2.new(1, 0, 0, 44), Text = "ยังไม่มีฟีเจอร์ที่เปิดอยู่", TextSize = 11, TextColor3 = THEME.SubText, TextXAlignment = Enum.TextXAlignment.Center })
+				end
+				panel.Size = UDim2.fromOffset(264, math.clamp(54 + math.max(n, 1) * 38, 100, 330))
+			end
+
+			offAll.MouseButton1Click:Connect(function()
+				for _, t in ipairs(X.toggles) do
+					if not t.keep and t.api.get() then t.api.set(false, true) end
+				end
+				notify("Active Features", "ปิดฟีเจอร์ทั้งหมดแล้ว", 1.8, "success")
+			end)
+			catcher.MouseButton1Click:Connect(close)
+			X.onActive = function() if open then refresh() end end
+			X.badgeBtn.MouseButton1Click:Connect(function()
+				if open then
+					close()
+				else
+					open = true
+					refresh()
+					panel.Visible = true
+					catcher.Visible = true
+				end
+			end)
+		end
+
+		searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+			local q = string.lower(searchBox.Text)
+			for _, page in pairs(pages) do
+				for _, child in ipairs(page:GetChildren()) do
+					if child:IsA("GuiObject") then
+						if child:GetAttribute("IsHeader") then
+							child.Visible = (q == "")
+						else
+							local s = child:GetAttribute("Search")
+							child.Visible = (q == "") or (s ~= nil and string.find(s, q, 1, true) ~= nil)
+						end
+					end
+				end
+			end
+		end)
+	end, true)
+
+	local resetters = {}
+
+	local function section(page, text)
+		local h = make("Frame", { Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1 }, page)
+		h:SetAttribute("IsHeader", true)
+		local bar = make("Frame", { Size = UDim2.fromOffset(3, 12), Position = UDim2.new(0, 0, 0.5, -6), BackgroundColor3 = WHITE, BorderSizePixel = 0 }, h)
+		round(bar, 2)
+		gradient(bar, THEME.Accent1, THEME.Accent2, 90)
+		label(h, { Size = UDim2.new(1, -12, 1, 0), Position = UDim2.fromOffset(10, 0), Text = string.upper(text), Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = THEME.SubText })
+		return h
+	end
+
+	local function card(page, height)
+		local row = make("Frame", { Size = UDim2.new(1, 0, 0, height), BackgroundColor3 = THEME.Card, BorderSizePixel = 0 }, page)
+		round(row, 10)
+		local s = stroke(row, THEME.Stroke, 1, 0.45)
+		return row, s
+	end
+
+	local function slider(page, text, minV, maxV, default, step, onChange)
+		local row = card(page, 66)
+		row:SetAttribute("Search", string.lower(text))
+		label(row, { Size = UDim2.new(1, -120, 0, 22), Position = UDim2.fromOffset(12, 8), Text = text, Font = Enum.Font.GothamBold, TextSize = 12, TextTruncate = Enum.TextTruncate.AtEnd })
+
+		local boxWrap = make("Frame", { Size = UDim2.fromOffset(56, 24), Position = UDim2.new(1, -96, 0, 7), BackgroundColor3 = THEME.Panel, BorderSizePixel = 0 }, row)
+		round(boxWrap, 7)
+		stroke(boxWrap, THEME.Stroke, 1, 0.4)
+		local box = make("TextBox", {
+			Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, TextColor3 = THEME.Accent2, Font = Enum.Font.GothamBold,
+			TextSize = 12, ClearTextOnFocus = false, Text = tostring(default),
+		}, boxWrap)
+
+		local resetBtn = make("TextButton", {
+			Size = UDim2.fromOffset(26, 24), Position = UDim2.new(1, -36, 0, 7), BackgroundColor3 = THEME.Panel,
+			TextColor3 = THEME.SubText, Font = Enum.Font.GothamBold, TextSize = 13, Text = "↺", AutoButtonColor = false,
+		}, row)
+		round(resetBtn, 7)
+		resetBtn.MouseEnter:Connect(function() tween(resetBtn, 0.12, { TextColor3 = THEME.Accent2 }) end)
+		resetBtn.MouseLeave:Connect(function() tween(resetBtn, 0.12, { TextColor3 = THEME.SubText }) end)
+
+		local track = make("Frame", { Size = UDim2.new(1, -28, 0, 8), Position = UDim2.new(0, 14, 0, 46), BackgroundColor3 = THEME.Panel, BorderSizePixel = 0 }, row)
+		round(track, 4)
+		local fill = make("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = WHITE, BorderSizePixel = 0 }, track)
+		round(fill, 4)
+		gradient(fill, THEME.Accent1, THEME.Accent2, 0)
+		local knob = make("Frame", { Size = UDim2.fromOffset(18, 18), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0, 0.5), BackgroundColor3 = WHITE, BorderSizePixel = 0, ZIndex = 3 }, track)
+		round(knob, 9)
+		stroke(knob, THEME.Accent2, 2, 0.1)
+		local area = make("TextButton", { Size = UDim2.new(1, 20, 0, 30), Position = UDim2.new(0, -10, 0.5, -15), BackgroundTransparency = 1, Text = "", ZIndex = 4 }, track)
+
+		local value = default
+		local function setValue(v, silent)
+			v = math.clamp(math.round(v / step) * step, minV, maxV)
+			value = v
+			local p = math.clamp((v - minV) / (maxV - minV), 0, 1)
+			fill.Size = UDim2.fromScale(p, 1)
+			knob.Position = UDim2.fromScale(p, 0.5)
+			box.Text = tostring(v)
+			if not silent then onChange(v) end
+		end
+
+		local dragInput
+		local function updateFromX(x)
+			local p = math.clamp((x - track.AbsolutePosition.X) / math.max(track.AbsoluteSize.X, 1), 0, 1)
+			setValue(minV + (maxV - minV) * p)
+		end
+
+		area.InputBegan:Connect(function(input)
+			if isPress(input) then
+				dragInput = input
+				page.ScrollingEnabled = false
+				tween(knob, 0.1, { Size = UDim2.fromOffset(22, 22) })
+				updateFromX(input.Position.X)
+			end
+		end)
+		mainMaid:Give(UserInputService.InputChanged:Connect(function(input)
+			if dragInput and (input == dragInput or (input.UserInputType == Enum.UserInputType.MouseMovement and dragInput.UserInputType == Enum.UserInputType.MouseButton1)) then
+				updateFromX(input.Position.X)
+			end
+		end))
+		mainMaid:Give(UserInputService.InputEnded:Connect(function(input)
+			if dragInput then
+				dragInput = nil
+				page.ScrollingEnabled = true
+				tween(knob, 0.1, { Size = UDim2.fromOffset(18, 18) })
+			end
+		end))
+
+		box.FocusLost:Connect(function()
+			local n = tonumber(box.Text)
+			if n then setValue(n) else box.Text = tostring(value) end
+		end)
+
+		resetBtn.MouseButton1Click:Connect(function() setValue(default) end)
+		setValue(default, true)
+		table.insert(resetters, function() setValue(default) end)
+		return { reset = function() setValue(default) end, set = setValue }
+	end
+
+	local function toggle(page, labelText, onToggle, desc, keepOnReset)
+		local h = desc and 52 or 42
+		local row, rowStroke = card(page, h)
+		row:SetAttribute("Search", string.lower(labelText .. " " .. (desc or "")))
+
+		label(row, {
+			Size = UDim2.new(1, -72, 0, desc and 20 or h), Position = UDim2.fromOffset(12, desc and 8 or 0),
+			Text = labelText, Font = Enum.Font.GothamBold, TextSize = 12, TextTruncate = Enum.TextTruncate.AtEnd,
+		})
+		if desc then
+			label(row, { Size = UDim2.new(1, -72, 0, 16), Position = UDim2.fromOffset(12, 28), Text = desc, Font = Enum.Font.Gotham, TextSize = 10, TextColor3 = THEME.SubText, TextTruncate = Enum.TextTruncate.AtEnd })
+		end
+
+		local track = make("Frame", { Size = UDim2.fromOffset(44, 24), Position = UDim2.new(1, -56, 0.5, -12), BackgroundColor3 = THEME.Panel, BorderSizePixel = 0 }, row)
+		round(track, 12)
+		stroke(track, THEME.Stroke, 1, 0.3)
+		local trackGrad = gradient(track, THEME.Accent1, THEME.Accent2, 0)
+		trackGrad.Enabled = false
+		local knob = make("Frame", { Size = UDim2.fromOffset(18, 18), Position = UDim2.new(0, 3, 0.5, -9), BackgroundColor3 = THEME.SubText, BorderSizePixel = 0 }, track)
+		round(knob, 9)
+
+		local hit = make("TextButton", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", ZIndex = 2 }, row)
+		hit.MouseEnter:Connect(function() tween(row, 0.12, { BackgroundColor3 = THEME.CardHover }) end)
+		hit.MouseLeave:Connect(function() tween(row, 0.12, { BackgroundColor3 = THEME.Card }) end)
+
+		local state = false
+		local function apply(newState, silent)
+			if newState ~= state and not keepOnReset then
+				activeCount = activeCount + (newState and 1 or -1)
+				updateBadge()
+			end
+			state = newState
+			trackGrad.Enabled = state
+			tween(track, 0.18, { BackgroundColor3 = state and WHITE or THEME.Panel })
+			tween(knob, 0.18, {
+				Position = state and UDim2.new(1, -21, 0.5, -9) or UDim2.new(0, 3, 0.5, -9),
+				BackgroundColor3 = state and WHITE or THEME.SubText,
+			})
+			tween(rowStroke, 0.18, { Color = state and THEME.Accent2 or THEME.Stroke, Transparency = state and 0.2 or 0.45 })
+			if not silent then
+				notify(labelText, state and "เปิดใช้งานแล้ว" or "ปิดใช้งานแล้ว", 1.6, state and "success" or "off")
+			end
+			onToggle(state)
+		end
+
+		hit.MouseButton1Click:Connect(function() apply(not state) end)
+
+		local api = {
+			set = function(s, silent) if s ~= state then apply(s, silent) end end,
+			get = function() return state end,
+		}
+		table.insert(X.toggles, { name = labelText, page = page, api = api, keep = keepOnReset })
+		if not keepOnReset then
+			table.insert(resetters, function() api.set(false, true) end)
+		end
+		return api
+	end
+
+	local function button(page, text, onClick, kind)
+		kind = kind or "ghost"
+		local btn = make("TextButton", {
+			Size = UDim2.new(1, 0, 0, 38), BackgroundColor3 = (kind == "primary") and WHITE or (kind == "danger" and THEME.Danger or THEME.Card),
+			Text = text, TextColor3 = WHITE, Font = Enum.Font.GothamBold, TextSize = 12, AutoButtonColor = false,
+			BackgroundTransparency = (kind == "danger") and 0.15 or 0,
+		}, page)
+		btn:SetAttribute("Search", string.lower(text))
+		round(btn, 10)
+		if kind == "primary" then gradient(btn, THEME.Accent1, THEME.Accent2, 0)
+		elseif kind == "danger" then stroke(btn, THEME.Danger, 1, 0.4)
+		else stroke(btn, THEME.Stroke, 1, 0.45) end
+		btn.MouseButton1Click:Connect(onClick)
+		return btn
+	end
+
+	local F = {
+		mm2Esp = false,
+		mm2EspTransparency = 0.5,
+		mm2SilentAim = false,
+		mm2KillAura = false,
+		mm2KillAuraRange = 18,
+		playerHitbox = false, playerHitboxSize = 10,
+	}
+
+	-- ==========================================
+	-- 📊 1. TAB: STATS
+	-- ==========================================
+	Section("Stats", function()
+		local pStats = pages["Stats"]
+		section(pStats, "Server & Performance")
+		local r1, _ = card(pStats, 42)
+		label(r1, { Size = UDim2.new(1, -24, 1, 0), Position = UDim2.fromOffset(12, 0), Text = "FPS:", Font = Enum.Font.GothamBold, TextSize = 12 })
+		local fpsValLbl = label(r1, { Size = UDim2.new(1, -24, 1, 0), Text = "60 FPS", Font = Enum.Font.GothamBold, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Right })
+
+		table.insert(X.Ticks, function()
+			fpsValLbl.Text = math.round(X.fps or 60) .. " FPS"
+		end)
+	end)
+
+	-- ==========================================
+	-- 🚶 2. TAB: PLAYER
+	-- ==========================================
+	local playerHitOrig = setmetatable({}, { __mode = "k" })
+	Section("Player", function()
+		local pPlayer = pages["Player"]
+
+		section(pPlayer, "Hitbox Expander")
+		toggle(pPlayer, "Player Hitbox Expander", function(on)
+			F.playerHitbox = on
+			if not on then
+				for part, o in pairs(playerHitOrig) do
+					if part and part.Parent then
+						part.Size = o.Size
+						part.Transparency = o.Transparency
+						part.CanCollide = o.CanCollide
+					end
+					playerHitOrig[part] = nil
+				end
+			end
+		end, "ขยายขนาดตัวละครของผู้เล่นอื่นเพื่อให้ออกอาวุธโดนง่ายขึ้น")
+
+		slider(pPlayer, "Hitbox Size", 2, 100, F.playerHitboxSize, 1, function(v)
+			F.playerHitboxSize = v
+		end)
+
+		section(pPlayer, "Actions")
+		button(pPlayer, "Reset Character", function()
+			if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+				player.Character.Humanoid.Health = 0
+			end
+		end)
+	end)
+
+	-- ==========================================
+	-- 👁️ 3. TAB: VISUALS
+	-- ==========================================
+	Section("Visuals", function()
+		local pVis = pages["Visuals"]
+		section(pVis, "Lighting")
+		toggle(pVis, "Fullbright", function(on)
+			Lighting.Brightness = on and 2 or 1
+			Lighting.GlobalShadows = not on
+			Lighting.OutdoorAmbient = on and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(128, 128, 128)
+		end, "สว่างไร้เงาในเกม")
+	end)
+
+	-- ==========================================
+	-- 🔪 4. TAB: MM2
+	-- ==========================================
+	Section("MM2", function()
+		local pMM2 = pages["MM2"]
+
+		section(pMM2, "Combat Helpers (Silent Aim & Kill Aura)")
+		toggle(pMM2, "Silent Aim Lock (Sheriff)", function(on)
+			F.mm2SilentAim = on
+		end, "ล็อกเป้ายิงกระสุนพุ่งหาฆาตกรอัตโนมัติ 100%")
+
+		toggle(pMM2, "Kill Aura (Murderer)", function(on)
+			F.mm2KillAura = on
+		end, "ฟันผู้เล่นรอบตัวอัตโนมัติเมื่อเล่นเป็นฆาตกร")
+
+		slider(pMM2, "Kill Aura Distance (Studs)", 5, 50, F.mm2KillAuraRange, 1, function(v)
+			F.mm2KillAuraRange = v
+		end)
+
+		section(pMM2, "MM2 Role ESP")
+		toggle(pMM2, "Advanced Role ESP", function(on)
+			F.mm2Esp = on
+		end, "แสดงป้ายชื่อและสถานะ Role (Murderer/Sheriff/Innocent)")
+
+		slider(pMM2, "ESP Transparency", 0, 1, F.mm2EspTransparency, 0.05, function(v)
+			F.mm2EspTransparency = v
+		end)
+	end)
+
+	-- ==========================================
+	-- ⚙️ 5. TAB: SETTINGS
+	-- ==========================================
+	Section("Settings", function()
+		local pSettings = pages["Settings"]
+		section(pSettings, "Server Actions")
+		button(pSettings, "🔄  Rejoin Server", function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player) end)
+		button(pSettings, "🌐  Server Hop", function() TeleportService:Teleport(game.PlaceId, player) end)
+	end)
+
+	-- ==========================================
+	-- 🔁 MAIN LOOP (HITBOX + ESP + COMBAT)
+	-- ==========================================
+	local mm2Tags = {}
+	mainMaid:Give(RunService.RenderStepped:Connect(function(dt)
+		X.fps = X.fps and (X.fps * 0.92 + (1 / math.max(dt, 0.001)) * 0.08) or 60
+
+		-- Hitbox Expander
+		if F.playerHitbox then
+			for _, target in ipairs(Players:GetPlayers()) do
+				if target ~= player and target.Character then
+					local root = target.Character:FindFirstChild("HumanoidRootPart")
+					local hum = target.Character:FindFirstChildOfClass("Humanoid")
+					if root and hum and hum.Health > 0 then
+						if not playerHitOrig[root] then
+							playerHitOrig[root] = { Size = root.Size, Transparency = root.Transparency, CanCollide = root.CanCollide }
+						end
+						root.Size = Vector3.new(F.playerHitboxSize, F.playerHitboxSize, F.playerHitboxSize)
+						root.Transparency = 0.6
+						root.CanCollide = false
+					end
+				end
+			end
+		end
+
+		-- Silent Aim Lock (Sheriff)
+		if F.mm2SilentAim then
+			pcall(function()
+				local char = player.Character
+				local backpack = player.Backpack
+				local tool = char and char:FindFirstChild("Gun") or (backpack and backpack:FindFirstChild("Gun"))
+				if tool and char and char:FindFirstChild("HumanoidRootPart") then
+					for _, target in ipairs(Players:GetPlayers()) do
+						if target ~= player and target.Character then
+							local tChar = target.Character
+							local tBp = target.Backpack
+							if tChar:FindFirstChild("Knife") or (tBp and tBp:FindFirstChild("Knife")) then
+								local tHrp = tChar:FindFirstChild("HumanoidRootPart")
+								if tHrp then
+									if tool.Parent == backpack then tool.Parent = char end
+									if tool.Parent == char then
+										tool:Activate()
+									end
+								end
+							end
+						end
+					end
+				end
+			end)
+		end
+
+		-- Kill Aura (Murderer)
+		if F.mm2KillAura then
+			pcall(function()
+				local char = player.Character
+				local backpack = player.Backpack
+				local tool = char and char:FindFirstChild("Knife") or (backpack and backpack:FindFirstChild("Knife"))
+				if tool and char and char:FindFirstChild("HumanoidRootPart") then
+					local hrp = char.HumanoidRootPart
+					for _, target in ipairs(Players:GetPlayers()) do
+						if target ~= player and target.Character then
+							local tChar = target.Character
+							local tHrp = tChar:FindFirstChild("HumanoidRootPart")
+							local tHum = tChar:FindFirstChildOfClass("Humanoid")
+							if tHrp and tHum and tHum.Health > 0 then
+								if (hrp.Position - tHrp.Position).Magnitude <= F.mm2KillAuraRange then
+									if tool.Parent == backpack then tool.Parent = char end
+									if tool.Parent == char then tool:Activate() end
+								end
+							end
+						end
+					end
+				end
+			end)
+		end
+
+		-- Role ESP
+		if F.mm2Esp then
+			for _, target in ipairs(Players:GetPlayers()) do
+				if target ~= player and target.Character and target.Character:FindFirstChild("Head") then
+					local char = target.Character
+					local head = char.Head
+					local highlight = char:FindFirstChild("MM2_Highlight") or Instance.new("Highlight")
+					highlight.Name = "MM2_Highlight"
+					highlight.Parent = char
+
+					local role = "Innocent 🛡️"
+					local col = Color3.fromRGB(50, 255, 50)
+
+					local bp = target.Backpack
+					if char:FindFirstChild("Knife") or (bp and bp:FindFirstChild("Knife")) then
+						role = "Murderer 🔪"
+						col = Color3.fromRGB(255, 50, 50)
+					elseif char:FindFirstChild("Gun") or (bp and bp:FindFirstChild("Gun")) then
+						role = "Sheriff 🔫"
+						col = Color3.fromRGB(50, 100, 255)
+					end
+
+					highlight.FillColor = col
+					highlight.FillTransparency = F.mm2EspTransparency
+					highlight.OutlineTransparency = F.mm2EspTransparency * 0.5
+
+					local bg = mm2Tags[target]
+					if not bg or bg.Parent ~= head then
+						if bg then bg:Destroy() end
+						bg = Instance.new("BillboardGui")
+						bg.Size = UDim2.fromOffset(130, 30)
+						bg.StudsOffset = Vector3.new(0, 3, 0)
+						bg.AlwaysOnTop = true
+						bg.Parent = head
+
+						local txt = label(bg, {
+							Size = UDim2.fromScale(1, 1),
+							TextSize = 12,
+							Font = Enum.Font.GothamBold,
+							TextXAlignment = Enum.TextXAlignment.Center,
+							TextColor3 = WHITE,
+							TextStrokeTransparency = 0.3,
+						})
+						txt.Name = "RoleText"
+						mm2Tags[target] = bg
+					end
+
+					local tLabel = bg:FindFirstChild("RoleText")
+					if tLabel then
+						tLabel.Text = target.Name .. "\n[" .. role .. "]"
+						tLabel.TextTransparency = F.mm2EspTransparency
+						tLabel.TextStrokeTransparency = math.clamp(0.3 + F.mm2EspTransparency * 0.5, 0, 1)
+					end
+				end
+			end
+		else
+			for _, target in ipairs(Players:GetPlayers()) do
+				if target.Character and target.Character:FindFirstChild("MM2_Highlight") then
+					target.Character.MM2_Highlight:Destroy()
+				end
+				if mm2Tags[target] then
+					mm2Tags[target]:Destroy()
+					mm2Tags[target] = nil
+				end
+			end
+		end
+
+		X.tickAcc = (X.tickAcc or 0) + dt
+		if X.tickAcc >= 0.5 then
+			X.tickAcc = 0
+			for _, fn in ipairs(X.Ticks) do pcall(fn) end
+		end
+	end))
+
+	notify("PlayerHUB", "โหลดสคริปต์ MM2 Final Edition สำเร็จ!", 3, "success")
+end)
+
+if not Success then
+	warn("PlayerHUB Error: " .. tostring(Err))
+end
