@@ -140,6 +140,6 @@ local function createScriptButton(name, desc, scriptUrl, order)
 end
 
 createScriptButton("⚡ PlayerHUB Main", "เปิดใช้งานสคริปต์ศูนย์กลางหลัก", "https://raw.githubusercontent.com/Petch25-1/PlayerHUB/refs/heads/main/PlayerHUB.lua", 1)
-createScriptButton("🔪 MM2 Edition (Final)", "เปิดใช้งานสคริปต์โปรไฟล์เกม MM2", "https://raw.githubusercontent.com/Petch25-1/PlayerHUB/refs/heads/main/MM2.lua", 2)
+createScriptButton("🔪 MM2 Edition", "เปิดใช้งานสคริปต์โปรไฟล์เกม MM2", "https://raw.githubusercontent.com/Petch25-1/PlayerHUB/refs/heads/main/MM2.lua", 2)
 createScriptButton("🛠️ Dumper Utility", "เปิดใช้งานเครื่องมือเสริม Dumper", "https://raw.githubusercontent.com/Petch25-1/PlayerHUB/refs/heads/main/Dumper.lua", 3)
 createScriptButton("🧟 Route 06 Edition", "เปิดใช้งานสคริปต์โปรไฟล์เกม Route 06", "https://raw.githubusercontent.com/Petch25-1/PlayerHUB/refs/heads/main/Route06.lua", 4)
