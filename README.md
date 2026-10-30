@@ -31,9 +31,9 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/Petch25-1/PlayerHUB/r
 |---|---|
 | 🧭 **Player_universe** | หน้าต่างเลือกสคริปต์ (Selector) เลื่อนดูรายการได้ กดเลือกแล้วโหลดให้ทันที |
 | ⚡ **PlayerHUB** | สคริปต์ศูนย์กลางหลัก มีแท็บ Stats / Player / Visuals / World / Camera / Settings |
-| 🎯 **Route06** | โปรไฟล์เฉพาะแมพ Route 06 (CFrame Speed, Kill Aura, Mob Lock & Bring, Fullbright, Weather Remover, ESP) |
+| 🧟 **Route06** | โปรไฟล์เฉพาะแมพ Route 06 (CFrame Speed, Kill Aura, Mob Lock & Bring, Fullbright, Weather Remover, ESP) |
 | 🔪 **MM2** | โปรไฟล์เกม MM2 |
-| 🛠️ **Dumper** | เครื่องมือเสริม Dumper |
+| ⚒️ **Dumper** | เครื่องมือเสริม Dumper |
 
 <details>
 <summary>📋 ลิงก์โหลดแต่ละตัวโดยตรง</summary>
