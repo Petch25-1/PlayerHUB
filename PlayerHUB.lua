@@ -12,6 +12,211 @@ local Success, Err = pcall(function()
 	local playerGui = player:WaitForChild("PlayerGui", 10)
 	if not playerGui then return end
 
+	-- ====== LOADING SCREEN ======
+	do
+		local okLoad, errLoad = pcall(function()
+			local LOAD_TITLE = "PLAYERHUB"
+			local C1 = Color3.fromRGB(168, 85, 247)
+			local C2 = Color3.fromRGB(56, 189, 248)
+			local rng = Random.new()
+
+			local function new(class, props, parent)
+				local obj = Instance.new(class)
+				for k, v in pairs(props) do obj[k] = v end
+				obj.Parent = parent
+				return obj
+			end
+			local function play(inst, info, goal)
+				local t = TweenService:Create(inst, info, goal)
+				t:Play()
+				return t
+			end
+
+			local old = playerGui:FindFirstChild("HubLoadingScreen")
+			if old then old:Destroy() end
+
+			local lgui = new("ScreenGui", {
+				Name = "HubLoadingScreen", IgnoreGuiInset = true, ResetOnSpawn = false, DisplayOrder = 999,
+			}, playerGui)
+			task.delay(20, function() if lgui.Parent then lgui:Destroy() end end)
+
+			local bg = new("CanvasGroup", {
+				Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0,
+			}, lgui)
+			local bgGrad = new("UIGradient", {
+				Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 10, 20)),
+					ColorSequenceKeypoint.new(0.5, Color3.fromRGB(28, 16, 56)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 24, 40)),
+				}),
+			}, bg)
+			play(bgGrad, TweenInfo.new(14, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), { Rotation = 360 })
+
+			-- floating particles
+			for _ = 1, 30 do
+				local size = rng:NextInteger(3, 8)
+				local dot = new("Frame", {
+					Size = UDim2.fromOffset(size, size),
+					Position = UDim2.fromScale(rng:NextNumber(), 1.1),
+					BackgroundColor3 = rng:NextNumber() > 0.5 and C1 or C2,
+					BackgroundTransparency = rng:NextNumber(0.5, 0.85),
+					BorderSizePixel = 0,
+				}, bg)
+				new("UICorner", { CornerRadius = UDim.new(1, 0) }, dot)
+				task.spawn(function()
+					task.wait(rng:NextNumber(0, 6))
+					while lgui.Parent do
+						local x = rng:NextNumber()
+						dot.Position = UDim2.fromScale(x, 1.1)
+						local t = play(dot, TweenInfo.new(rng:NextNumber(6, 12), Enum.EasingStyle.Linear), {
+							Position = UDim2.fromScale(x + rng:NextNumber(-0.1, 0.1), -0.1),
+						})
+						t.Completed:Wait()
+					end
+				end)
+			end
+
+			local content = new("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+				Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1,
+			}, bg)
+			local scale = new("UIScale", { Scale = 1 }, content)
+
+			-- dual rings
+			local function makeRing(size, color, duration, reverse)
+				local ring = new("Frame", {
+					AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.38),
+					Size = UDim2.fromOffset(size, size), BackgroundTransparency = 1,
+				}, content)
+				new("UICorner", { CornerRadius = UDim.new(1, 0) }, ring)
+				local stroke = new("UIStroke", { Thickness = 5, Color = color }, ring)
+				local grad = new("UIGradient", {
+					Transparency = NumberSequence.new({
+						NumberSequenceKeypoint.new(0, 0),
+						NumberSequenceKeypoint.new(0.45, 1),
+						NumberSequenceKeypoint.new(1, 1),
+					}),
+				}, stroke)
+				play(grad, TweenInfo.new(duration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {
+					Rotation = reverse and -360 or 360,
+				})
+				return ring, stroke
+			end
+			local ring1, stroke1 = makeRing(120, C1, 1.2, false)
+			local ring2, stroke2 = makeRing(90, C2, 0.9, true)
+
+			-- title: typewriter + pulsing glow
+			local title = new("TextLabel", {
+				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.55),
+				Size = UDim2.fromOffset(500, 50), BackgroundTransparency = 1, Text = LOAD_TITLE,
+				Font = Enum.Font.GothamBlack, TextSize = 40, TextColor3 = Color3.new(1, 1, 1),
+				MaxVisibleGraphemes = 0,
+			}, content)
+			local glow = new("UIStroke", { Thickness = 2, Color = C1, Transparency = 0.2 }, title)
+			play(glow, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Transparency = 0.85 })
+			task.spawn(function()
+				for i = 1, #LOAD_TITLE do
+					if not lgui.Parent then return end
+					title.MaxVisibleGraphemes = i
+					task.wait(0.09)
+				end
+			end)
+
+			local status = new("TextLabel", {
+				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.62),
+				Size = UDim2.fromOffset(400, 22), BackgroundTransparency = 1, Text = "Starting",
+				Font = Enum.Font.GothamMedium, TextSize = 15, TextColor3 = Color3.fromRGB(170, 170, 190),
+			}, content)
+
+			-- progress bar with shimmer
+			local barBg = new("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.68),
+				Size = UDim2.fromOffset(340, 10), BackgroundColor3 = Color3.fromRGB(30, 30, 45), BorderSizePixel = 0,
+			}, content)
+			new("UICorner", { CornerRadius = UDim.new(1, 0) }, barBg)
+			local fill = new("Frame", {
+				Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1),
+				BorderSizePixel = 0, ClipsDescendants = true,
+			}, barBg)
+			new("UICorner", { CornerRadius = UDim.new(1, 0) }, fill)
+			new("UIGradient", { Color = ColorSequence.new(C1, C2) }, fill)
+			local shine = new("Frame", {
+				Size = UDim2.fromScale(0.35, 1), Position = UDim2.fromScale(-0.4, 0),
+				BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0,
+			}, fill)
+			new("UIGradient", {
+				Transparency = NumberSequence.new({
+					NumberSequenceKeypoint.new(0, 1),
+					NumberSequenceKeypoint.new(0.5, 0.5),
+					NumberSequenceKeypoint.new(1, 1),
+				}),
+			}, shine)
+			play(shine, TweenInfo.new(1.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, -1), { Position = UDim2.fromScale(1.05, 0) })
+
+			local percent = new("TextLabel", {
+				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.725),
+				Size = UDim2.fromOffset(100, 20), BackgroundTransparency = 1, Text = "0%",
+				Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = C2,
+			}, content)
+
+			-- animated dots + smooth percent
+			local target, shown, baseText = 0, 0, "Starting"
+			task.spawn(function()
+				local d = 0
+				while lgui.Parent do
+					d = d % 3 + 1
+					status.Text = baseText .. string.rep(".", d)
+					task.wait(0.35)
+				end
+			end)
+			local conn = RunService.Heartbeat:Connect(function(dt)
+				shown += (target - shown) * math.min(dt * 6, 1)
+				fill.Size = UDim2.fromScale(math.clamp(shown, 0, 1), 1)
+				percent.Text = math.floor(shown * 100 + 0.5) .. "%"
+			end)
+			lgui.Destroying:Connect(function() conn:Disconnect() end)
+
+			-- steps
+			local STEPS = {
+				{ "Loading assets", 0.5 },
+				{ "Building interface", 0.5 },
+				{ "Connecting", 0.4 },
+				{ "Finalizing", 0.3 },
+			}
+			for i, s in ipairs(STEPS) do
+				baseText = s[1]
+				target = i / #STEPS
+				task.wait(s[2])
+			end
+			baseText = "Ready"
+			target = 1
+
+			-- cinematic exit runs in background so the hub keeps loading
+			task.spawn(function()
+				local t0 = os.clock()
+				while shown < 0.99 and os.clock() - t0 < 1 do task.wait() end
+				percent.Text = "100%"
+				task.wait(0.35)
+				play(glow, TweenInfo.new(0.2), { Transparency = 0, Thickness = 5 })
+				play(ring1, TweenInfo.new(0.8, Enum.EasingStyle.Quart), { Size = UDim2.fromOffset(700, 700) })
+				play(ring2, TweenInfo.new(0.8, Enum.EasingStyle.Quart), { Size = UDim2.fromOffset(500, 500) })
+				play(stroke1, TweenInfo.new(0.8), { Transparency = 1 })
+				play(stroke2, TweenInfo.new(0.8), { Transparency = 1 })
+				play(scale, TweenInfo.new(0.9, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Scale = 1.4 })
+				task.wait(0.3)
+				local fade = play(bg, TweenInfo.new(0.6, Enum.EasingStyle.Quad), { GroupTransparency = 1 })
+				fade.Completed:Wait()
+				lgui:Destroy()
+			end)
+		end)
+		if not okLoad then
+			warn("LoadingScreen error: " .. tostring(errLoad))
+			local g = playerGui:FindFirstChild("HubLoadingScreen")
+			if g then g:Destroy() end
+		end
+	end
+
+
 	-- ====== THEME ======
 	local THEME = {
 		Bg = Color3.fromRGB(10, 10, 18),
